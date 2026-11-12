@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>科技产业分析专家系统</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0B1120;--surface:#131C31;--elevated:#1C2740;--border:#243352;
+  --ink:#E8EDF7;--ink2:#8B9CC0;--ink3:#5A6B8A;
+  --accent:#4D8EFF;--accent2:#F5A623;--success:#2DD4A0;--danger:#F0506E;--purple:#A78BFA;
+  --radius:10px;--sidebar-w:232px;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:'PingFang SC','Microsoft YaHei','Inter',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+::selection{background:rgba(77,142,255,.3)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--ink3)}
+
+/* ── Layout ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;padding:28px 36px 60px}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:20px 16px 40px}
+  .menu-btn{display:flex!important}
+}
+.menu-btn{display:none;position:fixed;top:16px;left:16px;z-index:200;width:40px;height:40px;background:var(--surface);border:1px solid var(--border);border-radius:8px;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+
+/* ── Sidebar ── */
+.sidebar-logo{padding:24px 20px 18px;border-bottom:1px solid var(--border)}
+.sidebar-logo h1{font-size:15px;font-weight:700;letter-spacing:.5px;line-height:1.5}
+.sidebar-logo h1 span{color:var(--accent)}
+.sidebar-logo p{font-size:11px;color:var(--ink3);margin-top:4px;letter-spacing:1px}
+.nav{flex:1;padding:12px 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;transition:all .15s;font-size:13.5px;color:var(--ink2);border-left:3px solid transparent;user-select:none}
+.nav-item:hover{background:var(--elevated);color:var(--ink)}
+.nav-item.active{background:rgba(77,142,255,.1);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.nav-item .icon{width:20px;text-align:center;font-size:15px;opacity:.8}
+.nav-section{padding:14px 20px 6px;font-size:10px;color:var(--ink3);letter-spacing:2px;text-transform:uppercase}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);line-height:1.6}
+
+/* ── Content ── */
+.view{display:none;animation:fadeIn .25s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.view-header{margin-bottom:28px}
+.view-header h2{font-size:24px;font-weight:700;letter-spacing:.3px}
+.view-header p{color:var(--ink2);margin-top:8px;font-size:14px;line-height:1.7;max-width:720px}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px;transition:border-color .2s}
+.card:hover{border-color:rgba(77,142,255,.3)}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.card-header h3{font-size:15px;font-weight:600}
+.card-header .badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.badge-blue{background:rgba(77,142,255,.15);color:var(--accent)}
+.badge-amber{background:rgba(245,166,35,.15);color:var(--accent2)}
+.badge-green{background:rgba(45,212,160,.15);color:var(--success)}
+.badge-red{background:rgba(240,80,110,.15);color:var(--danger)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+
+/* ── Grid ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr}.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+/* ── Stats ── */
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center}
+.stat-card .num{font-size:32px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono','Consolas',monospace}
+.stat-card .label{font-size:12px;color:var(--ink2);margin-top:6px}
+.stat-card .sub{font-size:11px;color:var(--ink3);margin-top:4px}
+
+/* ── Knowledge Base ── */
+.kb-module{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.kb-module-header{padding:16px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .15s}
+.kb-module-header:hover{background:var(--elevated)}
+.kb-module-header h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:10px}
+.kb-module-header .toggle{font-size:18px;color:var(--ink3);transition:transform .25s}
+.kb-module.open .toggle{transform:rotate(180deg)}
+.kb-module-body{display:none;padding:0 20px 20px;border-top:1px solid var(--border)}
+.kb-module.open .kb-module-body{display:block}
+.kb-point{padding:12px 0;border-bottom:1px solid rgba(36,51,82,.5)}
+.kb-point:last-child{border-bottom:none}
+.kb-point h4{font-size:13.5px;color:var(--accent2);margin-bottom:6px;font-weight:600}
+.kb-point p{font-size:13px;color:var(--ink2);line-height:1.8}
+.kb-point ul{margin:6px 0 0 18px;color:var(--ink2);font-size:13px;line-height:1.9}
+
+/* ── Diagnostic Wizard ── */
+.wizard-steps{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap}
+.wizard-step{padding:10px 18px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid var(--border);color:var(--ink2);transition:all .2s;user-select:none}
+.wizard-step:hover{border-color:var(--accent);color:var(--ink)}
+.wizard-step.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.wizard-step.done{border-color:var(--success);color:var(--success)}
+.wizard-panel{display:none}
+.wizard-panel.active{display:block}
+.question-group{margin-bottom:22px}
+.question-group h4{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.question-group h4 .q-num{width:24px;height:24px;background:rgba(77,142,255,.15);color:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.slider-row{margin-bottom:16px}
+.slider-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.slider-label span:first-child{font-size:13px;color:var(--ink2)}
+.slider-label .val{font-size:13px;font-weight:600;color:var(--accent);font-family:'JetBrains Mono',monospace;min-width:28px;text-align:right}
+input[type=range]{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:var(--border);border-radius:3px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 8px rgba(77,142,255,.4)}
+.slider-hint{font-size:11px;color:var(--ink3);margin-top:4px;display:flex;justify-content:space-between}
+
+/* ── Buttons ── */
+.btn{padding:10px 22px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:inline-flex;align-items:center;gap:8px;user-select:none}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#3B7AFF;transform:translateY(-1px);box-shadow:0 4px 16px rgba(77,142,255,.3)}
+.btn-secondary{background:var(--elevated);color:var(--ink);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-success{background:var(--success);color:#0B1120}
+.btn-success:hover{transform:translateY(-1px)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-group{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+/* ── Radar Chart ── */
+.radar-wrap{display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+.radar-canvas{flex:0 0 auto}
+.radar-legend{flex:1;min-width:200px}
+.radar-legend-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(36,51,82,.5)}
+.radar-legend-item:last-child{border-bottom:none}
+.radar-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.radar-legend-item .dim-name{font-size:13px;color:var(--ink2);flex:1}
+.radar-legend-item .dim-score{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.radar-legend-item .dim-bar{width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.radar-legend-item .dim-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+
+/* ── Rules ── */
+.rule-card{background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:10px;transition:all .2s;cursor:pointer}
+.rule-card:hover{border-color:rgba(77,142,255,.4)}
+.rule-card.fired{border-color:var(--success);background:rgba(45,212,160,.06)}
+.rule-id{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--ink3);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.rule-id .tag{font-size:10px;padding:2px 8px;border-radius:4px}
+.rule-if{font-size:13px;color:var(--accent2);margin-bottom:6px;line-height:1.6}
+.rule-then{font-size:13px;color:var(--ink);line-height:1.6}
+.rule-action{font-size:12px;color:var(--success);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);line-height:1.6}
+
+/* ── Inference Chain ── */
+.chain{padding:4px 0}
+.chain-node{display:flex;gap:14px;margin-bottom:4px}
+.chain-dot-col{display:flex;flex-direction:column;align-items:center;width:20px}
+.chain-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:5px}
+.chain-dot.fired{background:var(--success)}
+.chain-line{width:2px;flex:1;background:var(--border);min-height:20px}
+.chain-content{flex:1;padding-bottom:18px}
+.chain-content h5{font-size:13px;font-weight:600;margin-bottom:4px}
+.chain-content p{font-size:12px;color:var(--ink2);line-height:1.7}
+
+/* ── Tables ── */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:10px 14px;background:var(--elevated);color:var(--ink2);font-weight:600;font-size:12px;border-bottom:1px solid var(--border)}
+.data-table td{padding:10px 14px;border-bottom:1px solid rgba(36,51,82,.5);color:var(--ink2)}
+.data-table tr:hover td{background:rgba(77,142,255,.04)}
+
+/* ── Tags ── */
+.tag-list{display:flex;flex-wrap:wrap;gap:8px}
+.tag{padding:5px 12px;border-radius:6px;font-size:12px;background:var(--elevated);color:var(--ink2);border:1px solid var(--border)}
+.tag.highlight{border-color:var(--accent);color:var(--accent);background:rgba(77,142,255,.08)}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:10px 18px;font-size:13px;color:var(--ink2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;user-select:none}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── Progress ── */
+.progress-bar{width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:10px 0}
+.progress-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+/* ── Note box ── */
+.note-box{padding:14px 18px;border-radius:8px;font-size:13px;line-height:1.8;border-left:3px solid}
+.note-blue{background:rgba(77,142,255,.08);border-color:var(--accent);color:var(--ink2)}
+.note-amber{background:rgba(245,166,35,.08);border-color:var(--accent2);color:var(--ink2)}
+.note-green{background:rgba(45,212,160,.08);border-color:var(--success);color:var(--ink2)}
+.note-red{background:rgba(240,80,110,.08);border-color:var(--danger);color:var(--ink2)}
+
+/* ── Section title ── */
+.section-title{font-size:16px;font-weight:700;margin:28px 0 16px;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';width:4px;height:20px;background:var(--accent);border-radius:2px}
+
+/* ── Checklist ── */
+.checklist{list-style:none}
+.checklist li{padding:10px 0;border-bottom:1px solid rgba(36,51,82,.4);display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--ink2);line-height:1.7}
+.checklist li::before{content:'◆';color:var(--accent);font-size:10px;margin-top:4px;flex-shrink:0}
+
+/* ── Search ── */
+.search-box{position:relative;margin-bottom:20px}
+.search-box input{width:100%;padding:12px 16px 12px 42px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:14px;outline:none;transition:border-color .2s}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--ink3)}
+.search-box .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:16px}
+
+/* ── Verdict ── */
+.verdict-box{border-radius:12px;padding:28px;margin:20px 0;text-align:center}
+.verdict-box h3{font-size:20px;font-weight:700;margin-bottom:10px}
+.verdict-box p{font-size:14px;line-height:1.8;max-width:600px;margin:0 auto}
+.verdict-great{background:linear-gradient(135deg,rgba(45,212,160,.12),rgba(45,212,160,.04));border:1px solid rgba(45,212,160,.3)}
+.verdict-good{background:linear-gradient(135deg,rgba(77,142,255,.12),rgba(77,142,255,.04));border:1px solid rgba(77,142,255,.3)}
+.verdict-warn{background:linear-gradient(135deg,rgba(245,166,35,.12),rgba(245,166,35,.04));border:1px solid rgba(245,166,35,.3)}
+.verdict-bad{background:linear-gradient(135deg,rgba(240,80,110,.12),rgba(240,80,110,.04));border:1px solid rgba(240,80,110,.3)}
+</style>
+</head>
+<body>
+
+<div class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</div>
+
+<div class="app">
+  <!-- ══════════ Sidebar ══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1><span>◆</span> 科技产业分析</h1>
+      <h1>专家系统</h1>
+      <p>WANG YUQUAN METHODOLOGY</p>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">主要功能</div>
+      <div class="nav-item active" data-view="overview" onclick="switchView('overview')">
+        <span class="icon">◉</span> 系统总览
+      </div>
+      <div class="nav-item" data-view="knowledge" onclick="switchView('knowledge')">
+        <span class="icon">◈</span> 方法论知识库
+      </div>
+      <div class="nav-item" data-view="diagnosis" onclick="switchView('diagnosis')">
+        <span class="icon">◎</span> 企业诊断
+      </div>
+      <div class="nav-item" data-view="industry" onclick="switchView('industry')">
+        <span class="icon">◇</span> 产业分析
+      </div>
+      <div class="nav-section">智能推理</div>
+      <div class="nav-item" data-view="inference" onclick="switchView('inference')">
+        <span class="icon">⬡</span> 推理引擎
+      </div>
+      <div class="nav-item" data-view="investment" onclick="switchView('investment')">
+        <span class="icon">▣</span> 投资决策
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      基于王煜全科技产业方法论<br>
+      31 页笔记 · 10 大模块 · 30+ 推理规则
+    </div>
+  </aside>
+
+  <!-- ══════════ Main ══════════ -->
+  <main class="main">
+
+  <!-- ══════════ VIEW: Overview ══════════ -->
+  <div class="view active" id="view-overview">
+    <div class="view-header">
+      <h2>科技产业分析专家系统</h2>
+      <p>基于王煜全方法论的智能分析平台。整合系统思维、企业五维分析、产业生态框架、技术评估、投资决策等十大知识模块，通过可解释的推理引擎为您提供科技产业分析决策支持。</p>
+    </div>
+
+    <div class="grid4">
+      <div class="stat-card"><div class="num">10</div><div class="label">知识模块</div><div class="sub">完整方法论体系</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--accent2)">32</div><div class="label">推理规则</div><div class="sub">IF-THEN 专家规则</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--success)">5</div><div class="label">分析维度</div><div class="sub">技术/业务/团队/资本/产业</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--purple)">3</div><div class="label">企业阶段</div><div class="sub">初创/成长/成熟</div></div>
+    </div>
+
+    <div class="section-title">系统架构</div>
+    <div class="grid3">
+      <div class="card">
+        <div class="card-header"><h3>◈ 知识库</h3><span class="badge badge-blue">Knowledge Base</span></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.8">结构化存储十大方法论模块：系统思维、企业分析、产业分析、业务分析、技术分析、产品分析、用户分析、需求分析、战略管理、投资逻辑。支持检索与浏览。</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>⬡ 推理引擎</h3><span class="badge badge-amber">Inference Engine</span></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.8">基于前向链接的规则推理系统。将 32 条专家规则编码为 IF-THEN 结构，输入企业/产业特征后自动触发规则链，生成可解释的分析结论。</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>◎ 诊断工作台</h3><span class="badge badge-green">Workbench</span></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.8">交互式五维评估工具。通过结构化问卷采集技术、业务、团队、资本、产业五个维度数据，生成雷达图、综合评分与策略建议。</p>
+      </div>
+    </div>
+
+    <div class="section-title">核心方法论</div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-header"><h3>企业分析五维框架</h3><span class="badge badge-blue">核心</span></div>
+        <table class="data-table">
+          <tr><th>维度</th><th>初创期</th><th>成长期</th><th>成熟期</th></tr>
+          <tr><td style="color:var(--accent)">技术</td><td>领先性</td><td>技术延伸</td><td>战略布局</td></tr>
+          <tr><td style="color:var(--accent2)">业务</td><td>潜在空间</td><td>危机管理</td><td>运营平台化</td></tr>
+          <tr><td style="color:var(--success)">团队</td><td>CEO</td><td>空降高管</td><td>公司治理</td></tr>
+          <tr><td style="color:var(--purple)">资本</td><td>VC</td><td>利益冲突</td><td>市值管理</td></tr>
+          <tr><td style="color:var(--danger)">产业</td><td>颠覆/新增/增强</td><td>产业风口</td><td>生态化布局</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>产业定位策略</h3><span class="badge badge-amber">关键</span></div>
+        <ul class="checklist">
+          <li><strong style="color:var(--danger)">产业颠覆</strong> — 不要声张，低调进入，避免被产业主导者围剿</li>
+          <li><strong style="color:var(--success)">产业增强</strong> — 贴近主导者，紧密合作，成为 Tier 1 供应商</li>
+          <li><strong style="color:var(--accent)">产业新增</strong> — 登高一呼，讲故事，教育市场，振臂一呼</li>
+        </ul>
+        <div class="note-box note-amber" style="margin-top:14px">
+          最常见的是科技造成的产业增强。稳定产业格局中，新科技进入往往是产业统治者最获益，造成强者恒强。
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">快速开始</div>
+    <div class="grid3">
+      <div class="card" style="cursor:pointer" onclick="switchView('diagnosis')">
+        <div class="card-header"><h3>🎯 企业诊断</h3></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.7">对一家科技企业进行五维度全面评估，生成雷达图与策略建议。</p>
+        <div class="btn-group"><span class="btn btn-primary btn-sm">开始诊断 →</span></div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="switchView('inference')">
+        <div class="card-header"><h3>🧠 推理引擎</h3></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.7">查看 32 条专家规则，输入条件触发推理链，获得可解释结论。</p>
+        <div class="btn-group"><span class="btn btn-primary btn-sm">进入推理 →</span></div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="switchView('knowledge')">
+        <div class="card-header"><h3>📚 知识库</h3></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.7">浏览完整的方法论知识体系，十大模块深度解析。</p>
+        <div class="btn-group"><span class="btn btn-primary btn-sm">浏览知识 →</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ VIEW: Knowledge Base ══════════ -->
+  <div class="view" id="view-knowledge">
+    <div class="view-header">
+      <h2>方法论知识库</h2>
+      <p>王煜全科技产业分析方法论完整知识体系，涵盖十大模块。点击展开查看详细内容。</p>
+    </div>
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="搜索知识点、框架、规则…" oninput="filterKB(this.value)">
+    </div>
+    <div id="kb-container"></div>
+  </div>
+
+  <!-- ══════════ VIEW: Diagnosis ══════════ -->
+  <div class="view" id="view-diagnosis">
+    <div class="view-header">
+      <h2>企业诊断工作台</h2>
+      <p>通过五维度评估体系全面诊断科技企业。每个维度包含 4 项指标，评分 1-5 分，系统自动生成雷达图、综合评分与策略建议。</p>
+    </div>
+
+    <div class="wizard-steps" id="wizard-steps">
+      <div class="wizard-step active" onclick="gotoStep(0)">1 技术维度</div>
+      <div class="wizard-step" onclick="gotoStep(1)">2 业务维度</div>
+      <div class="wizard-step" onclick="gotoStep(2)">3 团队维度</div>
+      <div class="wizard-step" onclick="gotoStep(3)">4 资本维度</div>
+      <div class="wizard-step" onclick="gotoStep(4)">5 产业维度</div>
+      <div class="wizard-step" onclick="gotoStep(5)">6 生成报告</div>
+    </div>
+
+    <!-- Step panels injected by JS -->
+    <div id="wizard-panels"></div>
+
+    <div class="btn-group" style="margin-top:24px">
+      <button class="btn btn-secondary" id="btn-prev" onclick="wizardPrev()">← 上一步</button>
+      <button class="btn btn-primary" id="btn-next" onclick="wizardNext()">下一步 →</button>
+      <button class="btn btn-success" id="btn-report" onclick="generateReport()" style="display:none">生成诊断报告</button>
+    </div>
+
+    <!-- Report area -->
+    <div id="report-area"></div>
+  </div>
+
+  <!-- ══════════ VIEW: Industry ══════════ -->
+  <div class="view" id="view-industry">
+    <div class="view-header">
+      <h2>产业分析工具</h2>
+      <p>基于产业生态框架、产业影响框架和时间线分析，系统化地研究产业链结构、核心企业、关键影响因素与演变规律。</p>
+    </div>
+
+    <div class="tabs" id="industry-tabs">
+      <div class="tab active" onclick="switchIndustryTab(0)">产业生态框架</div>
+      <div class="tab" onclick="switchIndustryTab(1)">产业影响框架</div>
+      <div class="tab" onclick="switchIndustryTab(2)">风口判断</div>
+      <div class="tab" onclick="switchIndustryTab(3)">分析模板</div>
+    </div>
+
+    <!-- Tab 0: 生态框架 -->
+    <div class="tab-content active" id="ind-tab-0">
+      <div class="card">
+        <div class="card-header"><h3>产业链空间线分析</h3><span class="badge badge-blue">方法</span></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.8;margin-bottom:16px">找产业链上的任意一家企业，沿供方和需方前后延伸展开，绘制完整产业链地图。</p>
+        <div class="grid2">
+          <div>
+            <h4 style="font-size:13px;color:var(--accent2);margin-bottom:10px">纵向延伸（供→需）</h4>
+            <ul class="checklist">
+              <li>找出企业的供方和需方</li>
+              <li>供方的供方是谁？</li>
+              <li>供方需方除自己外还有没有其它需方？（可能是竞争者）</li>
+              <li>供方的合作者和竞争者是谁？</li>
+              <li>需方的供方除了自己，还有没有其它供方？</li>
+              <li>需方的竞争者与合作者是谁？</li>
+              <li>需方还供应给谁？</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="font-size:13px;color:var(--accent2);margin-bottom:10px">产业影响时间线</h4>
+            <ul class="checklist">
+              <li>产业生命周期分析</li>
+              <li>抓核心企业（对别人影响大，被别人影响小）</li>
+              <li>产业演变：新兴→定型/稳定→颠覆/升级</li>
+              <li>市场接受的时间表</li>
+              <li>谁先谁后，怎么交互</li>
+            </ul>
+            <div class="note-box note-blue" style="margin-top:12px">
+              核心企业决定产业发展趋势，是非核心/附属企业的数量虽多但基本可以忽略（跟随变量）。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 1: 影响框架 -->
+    <div class="tab-content" id="ind-tab-1">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-header"><h3>关键影响因素</h3></div>
+          <h4 style="font-size:13px;color:var(--accent);margin-bottom:10px">对产业</h4>
+          <ul class="checklist">
+            <li>促进因素：推动产业发展的力量</li>
+            <li>制约因素：阻碍产业发展的瓶颈</li>
+          </ul>
+          <h4 style="font-size:13px;color:var(--accent);margin:16px 0 10px">对参与者</h4>
+          <ul class="checklist">
+            <li>竞争因素：企业间的对抗关系</li>
+            <li>合作因素：企业间的协同关系</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>主要矛盾分析</h3></div>
+          <ul class="checklist">
+            <li>看产业要学会抓主要矛盾，看懂背后的逻辑</li>
+            <li>大革命的逻辑：技术范式转变</li>
+            <li>几方角逐：此消彼长的利益关系</li>
+            <li>核心矛盾不会多——哪怕企业关系错综复杂</li>
+            <li>核心企业 = 核心变量，附属企业 = 跟随变量</li>
+          </ul>
+          <div class="note-box note-amber" style="margin-top:12px">
+            业内人士在产业没出现拐点时判断基本准确，但产业出现拐点时往往判断不准（屁股决定脑袋）。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 风口判断 -->
+    <div class="tab-content" id="ind-tab-2">
+      <div class="card">
+        <div class="card-header"><h3>风口产业的五个条件</h3><span class="badge badge-amber">核心标准</span></div>
+        <div class="grid2">
+          <div>
+            <ul class="checklist">
+              <li><strong>市场潜力大且清晰</strong>：足够大、能被看懂</li>
+              <li><strong>能够被估值</strong>：能量化潜在规模，不能估值就不能成为风口</li>
+              <li><strong>有收入利润</strong>：收入比利润更刚性，难以造假。风口前兆是看收入和收入增长</li>
+            </ul>
+          </div>
+          <div>
+            <ul class="checklist">
+              <li><strong>呈指数级增长</strong>：非线性，非匀速</li>
+              <li><strong>从风投到PE</strong>：上市前2-3年有大额股权投资</li>
+            </ul>
+            <div class="note-box note-green" style="margin-top:12px">
+              泡沫其实是机会。企业家要善用风口抬升估值、融更多钱、做并购填实业绩。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 分析模板 -->
+    <div class="tab-content" id="ind-tab-3">
+      <div class="card">
+        <div class="card-header"><h3>产业分析模板</h3><span class="badge badge-purple">可复用</span></div>
+        <p style="font-size:13px;color:var(--ink2);line-height:1.8;margin-bottom:16px">按以下步骤完成产业分析：</p>
+        <table class="data-table">
+          <tr><th>步骤</th><th>内容</th><th>产出</th></tr>
+          <tr><td style="color:var(--accent)">1. 搭建框架</td><td>画出产业链地图（供方-需方-竞争-合作）</td><td>产业生态图</td></tr>
+          <tr><td style="color:var(--accent)">2. 识别核心</td><td>找核心企业、核心矛盾</td><td>核心变量清单</td></tr>
+          <tr><td style="color:var(--accent)">3. 影响因素</td><td>促进/制约、竞争/合作</td><td>关键因素矩阵</td></tr>
+          <tr><td style="color:var(--accent)">4. 时间线</td><td>产业演变阶段、市场接受时间表</td><td>时间线图</td></tr>
+          <tr><td style="color:var(--accent)">5. 判定风口</td><td>五条件检验</td><td>风口判定结论</td></tr>
+          <tr><td style="color:var(--accent)">6. 策略匹配</td><td>颠覆/增强/新增 → 对应策略</td><td>策略建议</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ VIEW: Inference ══════════ -->
+  <div class="view" id="view-inference">
+    <div class="view-header">
+      <h2>推理引擎</h2>
+      <p>32 条专家规则构成的 IF-THEN 推理系统。设置企业/产业特征参数后，系统自动触发匹配规则并生成可解释的推理链。</p>
+    </div>
+
+    <!-- Input panel -->
+    <div class="card">
+      <div class="card-header"><h3>⚙ 特征输入</h3><span class="badge badge-blue">设置推理条件</span></div>
+      <div class="grid3">
+        <div class="slider-row">
+          <div class="slider-label"><span>技术领先性</span><span class="val" id="v-tech">3</span></div>
+          <input type="range" min="1" max="5" value="3" oninput="document.getElementById('v-tech').textContent=this.value">
+          <div class="slider-hint"><span>1 落后</span><span>5 领先</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>市场空间</span><span class="val" id="v-market">3</span></div>
+          <input type="range" min="1" max="5" value="3" oninput="document.getElementById('v-market').textContent=this.value">
+          <div class="slider-hint"><span>1 狭窄</span><span>5 巨大</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>团队能力</span><span class="val" id="v-team">3</span></div>
+          <input type="range" min="1" max="5" value="3" oninput="document.getElementById('v-team').textContent=this.value">
+          <div class="slider-hint"><span>1 弱</span><span>5 强</span></div>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:6px">
+        <div>
+          <div class="slider-label"><span>企业阶段</span></div>
+          <select id="v-stage" style="width:100%;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:13px">
+            <option value="startup">初创期</option>
+            <option value="growth" selected>成长期</option>
+            <option value="mature">成熟期</option>
+          </select>
+        </div>
+        <div>
+          <div class="slider-label"><span>产业定位</span></div>
+          <select id="v-position" style="width:100%;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:13px">
+            <option value="disrupt">产业颠覆</option>
+            <option value="enhance" selected>产业增强</option>
+            <option value="create">产业新增</option>
+          </select>
+        </div>
+        <div>
+          <div class="slider-label"><span>市场类型</span></div>
+          <select id="v-market-type" style="width:100%;padding:10px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;color:var(--ink);font-size:13px">
+            <option value="red">红海（现有市场）</option>
+            <option value="blue" selected>蓝海（新市场）</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="runInference()">▶ 运行推理</button>
+        <button class="btn btn-secondary" onclick="resetInference()">重置</button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="inference-results"></div>
+
+    <!-- Rule base -->
+    <div class="section-title">规则库（32 条）</div>
+    <div id="rule-base"></div>
+  </div>
+
+  <!-- ══════════ VIEW: Investment ══════════ -->
+  <div class="view" id="view-investment">
+    <div class="view-header">
+      <h2>投资决策支持</h2>
+      <p>基于王煜全投资方法论，从市场潜力、技术壁垒、团队质量、产业定位、估值合理性五个维度评估投资标的，生成投资建议。</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-header"><h3>📊 五维投资评估</h3></div>
+        <div class="slider-row">
+          <div class="slider-label"><span>市场潜力（天花板）</span><span class="val" id="iv-market">3</span></div>
+          <input type="range" min="1" max="10" value="3" oninput="document.getElementById('iv-market').textContent=this.value;calcInvest()">
+          <div class="slider-hint"><span>1 天花板低</span><span>10 巨大市场</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>技术壁垒</span><span class="val" id="iv-tech">3</span></div>
+          <input type="range" min="1" max="10" value="3" oninput="document.getElementById('iv-tech').textContent=this.value;calcInvest()">
+          <div class="slider-hint"><span>1 无壁垒</span><span>10 强独占</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>团队质量</span><span class="val" id="iv-team">3</span></div>
+          <input type="range" min="1" max="10" value="3" oninput="document.getElementById('iv-team').textContent=this.value;calcInvest()">
+          <div class="slider-hint"><span>1 弱</span><span>10 顶级</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>产业位置优势</span><span class="val" id="iv-position">3</span></div>
+          <input type="range" min="1" max="10" value="3" oninput="document.getElementById('iv-position').textContent=this.value;calcInvest()">
+          <div class="slider-hint"><span>1 边缘</span><span>10 主流核心</span></div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-label"><span>估值合理性</span><span class="val" id="iv-valuation">3</span></div>
+          <input type="range" min="1" max="10" value="3" oninput="document.getElementById('iv-valuation').textContent=this.value;calcInvest()">
+          <div class="slider-hint"><span>1 严重高估</span><span>10 显著低估</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="invest-result">
+          <div class="card-header"><h3>投资评分</h3></div>
+          <div style="text-align:center;padding:20px 0">
+            <div style="font-size:52px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--accent)" id="invest-score">30</div>
+            <div style="font-size:13px;color:var(--ink2);margin-top:4px">/ 100 综合评分</div>
+            <div class="progress-bar" style="margin:16px auto;max-width:300px">
+              <div class="progress-fill" id="invest-bar" style="width:30%;background:var(--accent)"></div>
+            </div>
+            <div id="invest-verdict" style="font-size:15px;font-weight:600;color:var(--accent2);margin-top:8px">一般机会</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>投资原则</h3><span class="badge badge-amber">核心</span></div>
+          <ul class="checklist">
+            <li>找未来成长潜力大、但今天未被充分认可的企业</li>
+            <li>市销率比市盈率更重要（科技企业）</li>
+            <li>投资新兴市场的头部股</li>
+            <li>不要投以上市为目标的企业，要投上市后能获大资本加持的企业</li>
+            <li>好并购：对方估值低、我估值高</li>
+            <li>大资本逻辑：蓄水池大 + 风险小</li>
+            <li>趋势投资：从点→线→面（核心→同类→相关）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">投资阶段判断</div>
+    <div class="card">
+      <table class="data-table">
+        <tr><th>阶段</th><th>判断标准</th><th>策略</th></tr>
+        <tr><td style="color:var(--danger)">早期</td><td>离产品进入市场还有 5 年</td><td>看技术领先性、CEO、融资能力</td></tr>
+        <tr><td style="color:var(--accent2)">中期</td><td>产品即将进入市场</td><td>看市场空间、成长性、竞争壁垒</td></tr>
+        <tr><td style="color:var(--success)">晚期</td><td>产品已上市、接近 IPO</td><td>看收入增长、利润趋势、市值管理</td></tr>
+      </table>
+      <div class="note-box note-blue" style="margin-top:14px">
+        技术布局可能要提前 10 年——好的技术从实验室到市场化需要 10 年。前瞻投资只敢做 10 年，否则变数太大。
+      </div>
+    </div>
+  </div>
+
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// Navigation
+// ═══════════════════════════════════════
+function switchView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const view = document.getElementById('view-' + id);
+  if (view) view.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-view="${id}"]`);
+  if (nav) nav.classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ═══════════════════════════════════════
+// Knowledge Base
+// ═══════════════════════════════════════
+const KB = [
+  {
+    id: 'systems', title: '一、系统思维', icon: '◈',
+    points: [
+      {h:'多层系统视角', p:'社会层面、产业层面、科技层面、企业层面、个人层面。不光要看懂产业、看懂科技，还要看懂政治、看懂经济、看懂偶然性。'},
+      {h:'数据分析四步法', p:'建立系统→代入现实案例→系统迭代。数据来源可靠、建立分析模型、放入模型演算、根据差异迭代。'},
+      {h:'贝叶斯原理', p:'先设立假设，再依据假设建立模型，不断和现实互动，根据差异迭代系统。永远不认为现有系统永恒正确。'},
+      {h:'大系统分析三要素', p:'系统结构要清晰、系统间制衡因果要了解、系统运作规律要挖出来。系统→制衡→规律，三点做好才能做判断。'},
+      {h:'预测方法', p:'范围越窄越准；把握规律越清晰越准；找到变化的信号。没有深刻变革时听业内专家，有深刻变革时不听（屁股决定脑袋）。'}
+    ]
+  },
+  {
+    id: 'enterprise', title: '二、企业分析', icon: '◎',
+    points: [
+      {h:'五维分析框架', p:'技术维度、业务维度、团队维度、资本维度、产业维度。技术不领先其它都免谈——先决条件。'},
+      {h:'判断企业成败五要点', p:'市场天花板、企业成长性（市销率>市盈率）、扩大经营难度、用户忠诚与传染性、竞争与壁垒。'},
+      {h:'平台化三硬指标', p:'用户量够大（自我维持）、利润够大（养活合作伙伴）、足够阻止竞争（压制后来者）。'},
+      {h:'初创期核心', p:'技术领先性→找到大且清晰的市场→看CEO决断力→能否融资→产业定位策略。创业要与大公司业务保持距离。'},
+      {h:'成长期核心', p:'技术重要性下降，管理能力上升。技术延伸三维度：升级、复杂化、跨领域应用。生死攸关期。'},
+      {h:'成熟期核心', p:'向外看、通过合作纳入新技术。战略投资三部曲：天使→合作→并购。从单点突破型企业变为生态型企业。'},
+      {h:'企业优势升级路径', p:'技术优势→产品→市场→品牌→产业→资本→巨无霸。每个阶段都要想好下个阶段提前布局。'},
+      {h:'战略并购', p:'知道方向、了解科技前沿、会操作（长短结合）。好并购：对方估值低、我估值高。'}
+    ]
+  },
+  {
+    id: 'industry', title: '三、产业分析', icon: '◇',
+    points: [
+      {h:'产业生态框架（空间线）', p:'描述相互关系的系统。从任一企业出发，找供方/需方/竞争者/合作者，前后延伸构成产业链分析。'},
+      {h:'产业影响框架（时间线）', p:'按时间线演变的系统。产业生命周期分析、抓核心企业、产业演变：新兴→定型→颠覆/升级。'},
+      {h:'关键影响因素', p:'对产业：促进/制约。对参与者：竞争/合作。抓主要矛盾——大革命逻辑+几方角逐的利益关系。'},
+      {h:'风口产业五条件', p:'市场潜力大且清晰、能被估值、有收入（比利润更刚性）、呈指数级增长、从风投到PE。'},
+      {h:'核心企业法则', p:'核心企业决定产业趋势=核心变量。附属企业=跟随变量，基本可忽略。核心矛盾不会多。'}
+    ]
+  },
+  {
+    id: 'business', title: '四、业务分析', icon: '◉',
+    points: [
+      {h:'业务分析框架', p:'正确定义需求→从技术到应用（坦克与闪电战）→市场（红海vs蓝海）→产业（颠覆/增强/新增）。'},
+      {h:'红海优于蓝海', p:'红海市场不需要教育用户，只需考虑用户转换成本。蓝海需要获取用户，成本更高。'},
+      {h:'传染性与雪崩点', p:'产品有传染性才能自动传播，传到雪崩点形成大面积传播，别人追不上。'},
+      {h:'2B vs 2C', p:'2B：经验可传递可复制可规模化，用技术保障。2C：追求更强烈体验，情感共鸣的扩散化。'},
+      {h:'闪电式扩张', p:'增长四要素：市场大小、销售渠道、高毛利率、网络效应。两个限制：产品-市场匹配、可扩展性。'},
+      {h:'平台型业务重点', p:'粘性、传染性、冷启动。产品需要渠道能力（用户触达），平台需要冷启动能力。'},
+      {h:'成功业务标准', p:'经验的规模化 + 职业替代/职业增强。坏业务：市场越做越小、缺乏差异化和壁垒。'}
+    ]
+  },
+  {
+    id: 'technology', title: '五、技术分析', icon: '⬡',
+    points: [
+      {h:'技术衍生与演化', p:'企业能否抓住每一代技术核心。通过衍生演化规律了解领先性、新兴性、独占性。'},
+      {h:'领先性的两部分', p:'原理领先 + 性能领先。原理是公说公有理，真正的领先取决于性能。新技术需要持续调优才能超越老技术。'},
+      {h:'技术可行性', p:'产品化难度、产业化难度、用户接受难度。可行性比最优解更重要。'},
+      {h:'产业接受度', p:'颠覆→低调；增强→贴近主导者做Tier 1；新增→登高一呼。策略必须配套。'},
+      {h:'技术进入市场四阶段', p:'爆发→狂热→协同→成熟。导入期和展开期之间一定有泡沫，泡沫破灭后才进入展开期。'},
+      {h:'莱特定律', p:'产量翻倍，生产成本降低 10-15%。'},
+      {h:'科技影响社会规律', p:'行为改变→习惯改变→观念改变。习惯改变阶段是最大机会。革命三阶段：能力增强→新型应用→社会变革。'}
+    ]
+  },
+  {
+    id: 'product', title: '六、产品分析', icon: '▣',
+    points: [
+      {h:'产品三层次', p:'核心产品（核心利益/技术优势）→实际产品（完善属性/性价比）→延伸产品（服务/传播/粘性）。'},
+      {h:'四阶段推进', p:'科研→研发→量产→市场。CEO的目标是聚焦资源使产品从左上角向右下角推进。'},
+      {h:'长板与短板', p:'长板用来匹配需求（购买冲动来自长板）。短板决定不买的决策。核心产品要超长板，实际/延伸产品要做木桶。'},
+      {h:'产品设计原则', p:'找到企业可传递优势和客户需求的重合点；实际产品避免短板；延伸产品大放异彩。'},
+      {h:'划时代好产品', p:'绝大多数是独裁的结果，而不是协调的结果。平庸产品来自人人贡献建议。'}
+    ]
+  },
+  {
+    id: 'user', title: '七、用户分析', icon: '◆',
+    points: [
+      {h:'用户特征', p:'细分方法强调可应用性/实用性，分完后对销售有帮助，方便找到用户，可触达。'},
+      {h:'用户心理', p:'马斯洛需求层次=欲望层次。成年人：安全→舒适→社会认同→自我实现。儿童：安全→舒适→探索→挑战。'},
+      {h:'三重心理', p:'自我心理（我是谁）→社交心理（小圈子）→社会心理。成人身份炫耀，孩子能力炫耀。'},
+      {h:'需求发展规律', p:'从物质到精神、从占有到体验、从共性到个性、从真实到虚拟。'}
+    ]
+  },
+  {
+    id: 'demand', title: '八、需求分析', icon: '◇',
+    points: [
+      {h:'业务需求两核心', p:'舒适（技术满足性能增强）+ 探索（选择增多，不是个性化）。舒适→探索进步，自动化→平台化。'},
+      {h:'下一个巨大机会', p:'物质世界舒适度提升（管家佣人）、精神世界、虚拟世界（物理规则/社会规则颠覆）。'},
+      {h:'技术-需求-社会选择', p:'技术选择需求→找最大需求。需求选择技术→满足现阶段最重要需求。社会选择技术→广泛影响、可批量复制。'},
+      {h:'当前阶段', p:'共性服务需求的个性化满足。找共性需求再个性化满足——人人都有需求但满足方式不同。'}
+    ]
+  },
+  {
+    id: 'strategy', title: '九、战略与管理', icon: '◉',
+    points: [
+      {h:'战略vs管理', p:'战略=资源配置，管理=资源优化，经营=资源聚集。'},
+      {h:'CEO三件事', p:'定方向、定战略、做管理。衡量CEO好不好的标准：能否调动所有资源实现聚焦，把产品推向市场。'},
+      {h:'战术两核心', p:'聚集所有资源 + 聚集到一个点突破。初创企业必须聚焦，没有资源可浪费。'},
+      {h:'大企业矛盾', p:'短期：长期战略vs股市表现。长期：稳定经营vs适应变化。创新快→强调决策灵活性；创新慢→强调系统管理。'},
+      {h:'核心转变', p:'从小企业到大企业的本质不是收入利润，而是从单点突破型变成生态型企业。'}
+    ]
+  },
+  {
+    id: 'investment', title: '十、投资', icon: '▣',
+    points: [
+      {h:'投资本质', p:'找未来成长潜力大、但今天未被充分认可的企业。做基于市场机会的聪明投资者。'},
+      {h:'趋势投资', p:'从点到线到面：核心企业→同类企业→相关企业。更前瞻=更早期识别未来趋势。'},
+      {h:'价值洼地', p:'收入利润好但转型不够坚决的企业，一旦坚决转型并让人感知到，估值瞬间抬升。'},
+      {h:'大资本逻辑', p:'蓄水池要足够大 + 风险要足够小。安全=系统安全（政府）+ 企业安全（成长性）。'},
+      {h:'泡沫=机会', p:'善用风口抬升估值、融更多钱、做并购填实业绩。企业高估值不是因为业绩而是关键技术。'}
+    ]
+  }
+];
+
+function renderKB() {
+  const c = document.getElementById('kb-container');
+  c.innerHTML = KB.map((m, i) => `
+    <div class="kb-module${i === 0 ? ' open' : ''}" data-kb="${m.id}">
+      <div class="kb-module-header" onclick="this.parentElement.classList.toggle('open')">
+        <h3>${m.icon} ${m.title}</h3>
+        <span class="toggle">▾</span>
+      </div>
+      <div class="kb-module-body">
+        ${m.points.map(p => `
+          <div class="kb-point">
+            <h4>${p.h}</h4>
+            <p>${p.p}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterKB(q) {
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.kb-module').forEach(mod => {
+    const text = mod.textContent.toLowerCase();
+    if (!q || text.includes(q)) {
+      mod.style.display = '';
+      if (q) mod.classList.add('open');
+    } else {
+      mod.style.display = 'none';
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// Diagnosis Wizard
+// ═══════════════════════════════════════
+const DIAG_DIMS = [
+  {
+    name: '技术维度', color: '#4D8EFF',
+    questions: [
+      {id:'t1', label:'技术领先性（原理与性能）', hint:'是否在核心原理或性能上领先'},
+      {id:'t2', label:'技术壁垒/独占性', hint:'专利、Know-how、创新速度形成的壁垒'},
+      {id:'t3', label:'技术延伸性', hint:'技术可升级、复杂化、跨领域应用的能力'},
+      {id:'t4', label:'技术可行性（产品化/产业化）', hint:'产品化难度、产业化难度、用户接受度'}
+    ]
+  },
+  {
+    name: '业务维度', color: '#F5A623',
+    questions: [
+      {id:'b1', label:'市场空间与天花板', hint:'市场规模是否足够大且清晰'},
+      {id:'b2', label:'需求匹配度', hint:'产品是否解决真实痛点，找到可复制的点'},
+      {id:'b3', label:'用户忠诚与传染性', hint:'用户粘性、自动传播能力'},
+      {id:'b4', label:'竞争壁垒', hint:'转换成本、差异化、网络效应'}
+    ]
+  },
+  {
+    name: '团队维度', color: '#2DD4A0',
+    questions: [
+      {id:'e1', label:'CEO 决断力', hint:'冒险精神、对规则的重视、讲故事能力'},
+      {id:'e2', label:'管理能力', hint:'组织扩张、流程建设、危机管理'},
+      {id:'e3', label:'行业经验与人脉', hint:'产业理解、信用积累、合作网络'},
+      {id:'e4', label:'融资能力', hint:'能否拿到钱、投资人的信任'}
+    ]
+  },
+  {
+    name: '资本维度', color: '#A78BFA',
+    questions: [
+      {id:'c1', label:'融资阶段与金额', hint:'融资进度、金额是否充足'},
+      {id:'c2', label:'估值合理性', hint:'估值是否可预测、可量化'},
+      {id:'c3', label:'资本运作能力', hint:'市值管理、战略投资、并购能力'},
+      {id:'c4', label:'资源聚焦度', hint:'有限资源是否聚焦到最关键处'}
+    ]
+  },
+  {
+    name: '产业维度', color: '#F0506E',
+    questions: [
+      {id:'i1', label:'产业定位清晰度', hint:'颠覆/增强/新增，定位是否明确'},
+      {id:'i2', label:'产业链位置', hint:'是否在主流而非边角位置'},
+      {id:'i3', label:'产业风口契合度', hint:'是否处于风口产业'},
+      {id:'i4', label:'生态布局能力', hint:'合作伙伴、平台化、生态构建'}
+    ]
+  }
+];
+
+let currentStep = 0;
+const diagScores = {};
+
+function buildWizard() {
+  const container = document.getElementById('wizard-panels');
+  container.innerHTML = DIAG_DIMS.map((dim, di) => `
+    <div class="wizard-panel${di === 0 ? ' active' : ''}" id="wp-${di}">
+      <div class="card">
+        <div class="card-header">
+          <h3 style="color:${dim.color}">${dim.name}</h3>
+          <span class="badge badge-blue">4 项指标 · 1-5 分</span>
+        </div>
+        ${dim.questions.map(q => `
+          <div class="slider-row">
+            <div class="slider-label">
+              <span>${q.label}</span>
+              <span class="val" id="dv-${q.id}">3</span>
+            </div>
+            <input type="range" min="1" max="5" value="3" data-qid="${q.id}"
+              oninput="document.getElementById('dv-${q.id}').textContent=this.value;diagScores['${q.id}']=+this.value">
+            <div class="slider-hint"><span>1 弱</span><span style="font-size:10px;color:var(--ink3)">${q.hint}</span><span>5 强</span></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  // Init scores
+  DIAG_DIMS.forEach(d => d.questions.forEach(q => diagScores[q.id] = 3));
+}
+
+function gotoStep(n) {
+  if (n < 0 || n > 5) return;
+  currentStep = n;
+  document.querySelectorAll('.wizard-step').forEach((s, i) => {
+    s.classList.toggle('active', i === n);
+    s.classList.toggle('done', i < n);
+  });
+  document.querySelectorAll('.wizard-panel').forEach((p, i) => {
+    p.classList.toggle('active', i === n);
+  });
+  // Report panel (step 5)
+  if (n === 5) {
+    document.getElementById('btn-prev').style.display = '';
+    document.getElementById('btn-next').style.display = 'none';
+    document.getElementById('btn-report').style.display = '';
+  } else {
+    document.getElementById('btn-prev').style.display = n > 0 ? '' : 'none';
+    document.getElementById('btn-next').style.display = '';
+    document.getElementById('btn-report').style.display = 'none';
+    // Clear old report when going back to editing
+    document.getElementById('report-area').innerHTML = '';
+  }
+}
+
+function wizardNext() { gotoStep(currentStep + 1); }
+function wizardPrev() { gotoStep(currentStep - 1); }
+
+function getDimScore(di) {
+  const dim = DIAG_DIMS[di];
+  const total = dim.questions.reduce((s, q) => s + (diagScores[q.id] || 3), 0);
+  return Math.round(total / dim.questions.length * 20); // 0-100
+}
+
+function generateReport() {
+  const scores = DIAG_DIMS.map((_, i) => getDimScore(i));
+  const overall = Math.round(scores.reduce((a, b) => a + b, 0) / 5);
+  const colors = DIAG_DIMS.map(d => d.color);
+
+  // Determine verdict
+  let verdictClass, verdictText, verdictDesc;
+  if (overall >= 80) {
+    verdictClass = 'verdict-great'; verdictText = '★ 优秀 — 投资/发展强烈推荐';
+    verdictDesc = '五维度均衡且突出，具备成为行业领先企业的潜力。建议加大投入，加速市场扩张。';
+  } else if (overall >= 60) {
+    verdictClass = 'verdict-good'; verdictText = '✓ 良好 — 值得关注与投入';
+    verdictDesc = '整体表现良好，有明确的优势维度。建议针对弱项补齐短板，把握增长机会。';
+  } else if (overall >= 40) {
+    verdictClass = 'verdict-warn'; verdictText = '△ 一般 — 谨慎观望';
+    verdictDesc = '存在明显短板，需要针对性改善。建议聚焦核心优势、补齐关键弱项后再加速。';
+  } else {
+    verdictClass = 'verdict-bad'; verdictText = '✕ 较弱 — 风险较高';
+    verdictDesc = '多维度表现不足，核心竞争力尚未建立。建议重新审视技术路线和商业模式。';
+  }
+
+  // Find strengths and weaknesses
+  const dimNames = DIAG_DIMS.map(d => d.name);
+  const strengthIdx = scores.indexOf(Math.max(...scores));
+  const weakIdx = scores.indexOf(Math.min(...scores));
+
+  // Generate rule-based recommendations
+  const recs = [];
+  if ((diagScores.t1 || 3) <= 2) recs.push({type:'red', text:'技术领先性不足——"技术不领先，其它都免谈"。这是先决条件，优先提升技术壁垒和性能优势。'});
+  if ((diagScores.t1 || 3) >= 4 && (diagScores.b1 || 3) <= 2) recs.push({type:'amber', text:'技术领先但市场空间不足——找到足够大且清晰的潜在市场。判断标准：能否实现职业替代或职业增强。'});
+  if ((diagScores.e1 || 3) <= 2) recs.push({type:'red', text:'CEO 决断力不足——初创企业必须敢冒险，四平八稳不可能成功。小公司要做得是大公司不敢做的事。'});
+  if ((diagScores.b3 || 3) >= 4) recs.push({type:'green', text:'用户传染性强——把握雪崩点机会，产品具备自动传播能力，有望形成大面积市场覆盖。'});
+  if ((diagScores.i1 || 3) >= 4) recs.push({type:'green', text:'产业定位清晰——根据定位匹配策略：颠覆→低调、增强→贴近主导者、新增→登高一呼。'});
+  if ((diagScores.c4 || 3) <= 2) recs.push({type:'amber', text:'资源聚焦度不足——"把有限的资源放到最关键的地方"。战略核心是资源配置，战术核心是聚焦突破。'});
+  if (scores[1] >= 70 && scores[3] <= 40) recs.push({type:'amber', text:'业务强但资本弱——借助风口期多多融资，用影响力换钱，把中短期机会变成长期优势。'});
+  if (overall >= 60) recs.push({type:'green', text:'整体处于可投资区间——关注"市销率>市盈率"，重视成长性而非当期利润。'});
+
+  const reportHTML = `
+    <div class="section-title">诊断报告</div>
+    <div class="verdict-box ${verdictClass}">
+      <h3>${verdictText}</h3>
+      <p>${verdictDesc}</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-header"><h3>五维雷达图</h3></div>
+        <div class="radar-wrap">
+          <canvas class="radar-canvas" id="radarCanvas" width="280" height="280"></canvas>
+          <div class="radar-legend">
+            ${DIAG_DIMS.map((d, i) => `
+              <div class="radar-legend-item">
+                <div class="radar-dot" style="background:${d.color}"></div>
+                <div class="dim-name">${d.name}</div>
+                <div class="dim-bar"><div class="dim-bar-fill" style="width:${scores[i]}%;background:${d.color}"></div></div>
+                <div class="dim-score" style="color:${d.color}">${scores[i]}</div>
+              </div>
+            `).join('')}
+            <div class="radar-legend-item" style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+              <div class="dim-name" style="font-weight:600">综合评分</div>
+              <div class="dim-score" style="font-size:18px;color:var(--accent)">${overall}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>策略建议</h3><span class="badge badge-green">规则推理</span></div>
+        ${recs.map(r => `
+          <div class="note-box note-${r.type === 'red' ? 'red' : r.type === 'amber' ? 'amber' : 'green'}" style="margin-bottom:10px">
+            ${r.text}
+          </div>
+        `).join('')}
+        <div class="note-box note-blue" style="margin-top:10px">
+          <strong>优势维度：</strong>${dimNames[strengthIdx]}（${scores[strengthIdx]} 分）<br>
+          <strong>待提升维度：</strong>${dimNames[weakIdx]}（${scores[weakIdx]} 分）
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('report-area').innerHTML = reportHTML;
+  drawRadar(scores, colors);
+}
+
+function drawRadar(scores, colors) {
+  const canvas = document.getElementById('radarCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 280, H = 280, cx = W/2, cy = H/2, R = 100;
+  ctx.clearRect(0, 0, W, H);
+
+  const n = 5;
+  const angleStep = (Math.PI * 2) / n;
+  const startAngle = -Math.PI / 2;
+
+  // Grid
+  for (let level = 1; level <= 5; level++) {
+    const r = R * level / 5;
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const a = startAngle + i * angleStep;
+      const x = cx + r * Math.cos(a);
+      const y = cy + r * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(36,51,82,0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Axes
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(a), cy + R * Math.sin(a));
+    ctx.strokeStyle = 'rgba(36,51,82,0.8)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Data polygon
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const idx = i % n;
+    const a = startAngle + idx * angleStep;
+    const r = R * scores[idx] / 100;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.fillStyle = 'rgba(77,142,255,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(77,142,255,0.7)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Data points
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    const r = R * scores[i] / 100;
+    const x = cx + r * Math.cos(a);
+    const y = cy + r * Math.sin(a);
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.strokeStyle = '#0B1120';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Labels
+  const labels = DIAG_DIMS.map(d => d.name);
+  ctx.font = '600 11px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++) {
+    const a = startAngle + i * angleStep;
+    const x = cx + (R + 22) * Math.cos(a);
+    const y = cy + (R + 22) * Math.sin(a);
+    ctx.fillStyle = colors[i];
+    ctx.fillText(labels[i], x, y);
+  }
+}
+
+// ═══════════════════════════════════════
+// Inference Engine
+// ═══════════════════════════════════════
+const RULES = [
+  {id:'R01', cat:'技术', if:'技术领先性 < 3', then:'技术不领先，其它都免谈', action:'这是先决条件——优先提升技术壁垒和性能优势', priority:'high'},
+  {id:'R02', cat:'技术', if:'技术领先性 ≥ 4', then:'技术具备竞争优势', action:'继续发挥技术优势，加速产品化和市场推广', priority:'info'},
+  {id:'R03', cat:'产业', if:'产业定位 = 产业颠覆', then:'颠覆策略：低调进入', action:'不要声张，避免被产业主导者围剿。高调容易被灭', priority:'high'},
+  {id:'R04', cat:'产业', if:'产业定位 = 产业增强', then:'增强策略：贴近主导者', action:'紧密合作产业老大，成为他们的 Tier 1，不要站前台', priority:'high'},
+  {id:'R05', cat:'产业', if:'产业定位 = 产业新增', then:'新增策略：登高一呼', action:'讲故事、教育市场、振臂一呼，新兴产业缔造者需要发声', priority:'high'},
+  {id:'R06', cat:'阶段', if:'企业阶段 = 初创期', then:'核心看 CEO 决断力', action:'初创期看CEO、技术领先性、融资能力。要与大公司业务保持距离', priority:'high'},
+  {id:'R07', cat:'阶段', if:'企业阶段 = 成长期', then:'核心看管理能力', action:'技术重要性下降，管理能力上升。成长期是生死攸关期，冲不上去风险很大', priority:'high'},
+  {id:'R08', cat:'阶段', if:'企业阶段 = 成熟期', then:'核心看生态布局', action:'向外看、通过合作纳入新技术。战略投资三部曲：天使→合作→并购', priority:'high'},
+  {id:'R09', cat:'市场', if:'市场类型 = 红海', then:'红海优于蓝海', action:'市场不需要教育，只需考虑用户转换成本。转换成本≠技术优势', priority:'medium'},
+  {id:'R10', cat:'市场', if:'市场类型 = 蓝海', then:'蓝海需教育市场', action:'用户获取成本高。确保有足够的市场教育预算和传播策略', priority:'medium'},
+  {id:'R11', cat:'业务', if:'市场空间 ≥ 4 且 技术领先性 ≥ 4', then:'具备大企业潜力', action:'只有需求特别大、技术又正好满足需求，才会成就大企业', priority:'high'},
+  {id:'R12', cat:'业务', if:'市场空间 ≤ 2', then:'市场天花板过低', action:'找两个指标：市场潜力大 + 可被技术统一。创业要找职业替代/增强', priority:'high'},
+  {id:'R13', cat:'团队', if:'团队能力 ≥ 4', then:'团队具备执行力', action:'CEO三件事：定方向、定战略、做管理。资源聚焦是关键', priority:'info'},
+  {id:'R14', cat:'团队', if:'团队能力 ≤ 2', then:'团队是关键短板', action:'初创看CEO决断力；成长看管理能力；成熟看治理结构。针对性补齐', priority:'high'},
+  {id:'R15', cat:'投资', if:'技术领先性 ≥ 4 且 市场空间 ≥ 4', then:'值得重点关注', action:'投资找未来成长潜力大、今天未被充分认可的企业', priority:'high'},
+  {id:'R16', cat:'投资', if:'企业阶段 = 成长期 且 团队能力 ≥ 4', then:'成长期+强团队 = 黄金组合', action:'市销率>市盈率。关注收入增长而非当期利润', priority:'medium'},
+  {id:'R17', cat:'平台', if:'市场空间 ≥ 4 且 团队能力 ≥ 4', then:'可考虑平台化战略', action:'平台三硬指标：用户量大、利润大、阻止竞争。平台化是稳定期关键', priority:'medium'},
+  {id:'R18', cat:'产品', if:'技术领先性 ≥ 4 且 团队能力 ≥ 4', then:'产品有望形成完整体系', action:'核心产品要超长板，实际/延伸产品要做木桶。设计时考虑粘性、传染性', priority:'info'},
+  {id:'R19', cat:'风险', if:'技术领先性 ≤ 2 且 市场空间 ≥ 4', then:'大市场但技术弱', action:'危险信号——好市场会吸引强竞争者。急需提升技术壁垒', priority:'high'},
+  {id:'R20', cat:'风险', if:'技术领先性 ≥ 4 且 市场空间 ≤ 2', then:'好技术但小市场', action:'技术优势无法变现。寻找更大的应用场景或重新定义市场', priority:'high'},
+  {id:'R21', cat:'增长', if:'市场空间 ≥ 4 且 企业阶段 = 成长期', then:'处于高速增长窗口', action:'砸大钱做市场。市场要么迅速接受要么不接受——闪电式扩张', priority:'high'},
+  {id:'R22', cat:'战略', if:'企业阶段 = 成熟期 且 技术领先性 ≤ 2', then:'大企业面临创新困境', action:'加强适应性、打破固有系统。通过战略投资纳入外部新技术', priority:'medium'},
+  {id:'R23', cat:'估值', if:'企业阶段 = 成长期 且 市场空间 ≥ 4', then:'高成长性支撑高估值', action:'企业高估值不是因为业绩而是关键技术。估值要可预测、可量化', priority:'info'},
+  {id:'R24', cat:'趋势', if:'技术领先性 ≥ 4', then:'技术优势可转化为趋势', action:'趋势投资从点到线到面。更前瞻=更早期识别未来趋势', priority:'info'},
+  {id:'R25', cat:'趋势', if:'市场空间 ≥ 4 且 产业定位 = 产业新增', then:'新兴产业风口机会', action:'善用风口抬升估值、融更多钱。泡沫是机会不是风险', priority:'high'},
+  {id:'R26', cat:'壁垒', if:'技术领先性 ≤ 2 且 团队能力 ≤ 2', then:'缺乏核心壁垒', action:'仅仅有用户、有市场不够——竞争力来自技术壁垒。可行性比最优解更重要', priority:'high'},
+  {id:'R27', cat:'模式', if:'市场空间 ≥ 4 且 技术领先性 ≥ 3 且 团队能力 ≥ 3', then:'具备闪电式扩张条件', action:'四要素：市场大、渠道、高毛利、网络效应。业务模式创新是科技企业的闪电战', priority:'medium'},
+  {id:'R28', cat:'并购', if:'企业阶段 = 成熟期 且 团队能力 ≥ 4', then:'具备战略并购能力', action:'好并购：对方估值低、我估值高。长短结合，用投资锁合作、用并购拉进来', priority:'medium'},
+  {id:'R29', cat:'社会', if:'技术领先性 ≥ 4 且 市场空间 ≥ 4', then:'可能引发社会变革', action:'科技革命三阶段：能力增强→新型应用→社会变革。习惯改变阶段是最大机会', priority:'info'},
+  {id:'R30', cat:'风险', if:'产业定位 = 产业颠覆 且 团队能力 ≤ 2', then:'颠覆者但执行力弱', action:'颠覆需要极强执行力和低调策略。建议先补齐团队再推进颠覆计划', priority:'high'},
+  {id:'R31', cat:'平衡', if:'技术领先性 ≥ 3 且 市场空间 ≥ 3 且 团队能力 ≥ 3', then:'三维均衡发展', action:'均衡是好信号。关注"从点突破到生态型"的转变，提前布局下阶段', priority:'info'},
+  {id:'R32', cat:'关键', if:'技术领先性 ≥ 4 且 市场空间 ≥ 4 且 团队能力 ≥ 4', then:'顶级投资标的', action:'所有核心维度均强——重点关注。JP摩根原则：新兴市场 + 头部股', priority:'high'}
+];
+
+function renderRules() {
+  const c = document.getElementById('rule-base');
+  c.innerHTML = RULES.map(r => `
+    <div class="rule-card" id="rule-${r.id}">
+      <div class="rule-id">
+        <strong>${r.id}</strong>
+        <span class="tag ${r.priority === 'high' ? 'badge-red' : r.priority === 'medium' ? 'badge-amber' : 'badge-blue'}">${r.cat}</span>
+        <span class="tag ${r.priority === 'high' ? 'badge-red' : r.priority === 'medium' ? 'badge-amber' : 'badge-blue'}">${r.priority === 'high' ? '高优先' : r.priority === 'medium' ? '中优先' : '参考'}</span>
+      </div>
+      <div class="rule-if">IF ${r.if}</div>
+      <div class="rule-then">THEN ${r.then}</div>
+      <div class="rule-action">▸ ${r.action}</div>
+    </div>
+  `).join('');
+}
+
+function runInference() {
+  const tech = +document.getElementById('v-tech').value;
+  const market = +document.getElementById('v-market').value;
+  const team = +document.getElementById('v-team').value;
+  const stage = document.getElementById('v-stage').value;
+  const position = document.getElementById('v-position').value;
+  const mktType = document.getElementById('v-market-type').value;
+
+  const fired = [];
+  const chain = [];
+
+  // Evaluate rules
+  RULES.forEach(r => {
+    let hit = false;
+    // Simple condition matching
+    const c = r.if;
+    if (c.includes('技术领先性 < 3') && tech < 3) hit = true;
+    if (c.includes('技术领先性 ≥ 4') && tech >= 4 && !c.includes('市场空间') && !c.includes('团队')) hit = true;
+    if (c.includes('产业定位 = 产业颠覆') && position === 'disrupt') hit = true;
+    if (c.includes('产业定位 = 产业增强') && position === 'enhance') hit = true;
+    if (c.includes('产业定位 = 产业新增') && position === 'create') hit = true;
+    if (c.includes('企业阶段 = 初创期') && stage === 'startup' && !c.includes('团队')) hit = true;
+    if (c.includes('企业阶段 = 成长期') && stage === 'growth' && !c.includes('团队') && !c.includes('市场空间') && !c.includes('技术')) hit = true;
+    if (c.includes('企业阶段 = 成熟期') && stage === 'mature' && !c.includes('团队') && !c.includes('技术')) hit = true;
+    if (c.includes('市场类型 = 红海') && mktType === 'red') hit = true;
+    if (c.includes('市场类型 = 蓝海') && mktType === 'blue') hit = true;
+    if (c.includes('市场空间 ≥ 4') && c.includes('技术领先性 ≥ 4') && !c.includes('团队') && !c.includes('产业定位') && !c.includes('企业阶段') && market >= 4 && tech >= 4) hit = true;
+    if (c.includes('市场空间 ≤ 2') && market <= 2) hit = true;
+    if (c.includes('团队能力 ≥ 4') && c.includes('技术') === false && c.includes('市场') === false && team >= 4) hit = true;
+    if (c.includes('团队能力 ≤ 2') && !c.includes('技术') && !c.includes('产业定位') && team <= 2) hit = true;
+    if (c.includes('技术领先性 ≤ 2') && c.includes('市场空间 ≥ 4') && tech <= 2 && market >= 4) hit = true;
+    if (c.includes('技术领先性 ≥ 4') && c.includes('市场空间 ≤ 2') && tech >= 4 && market <= 2) hit = true;
+    if (c.includes('市场空间 ≥ 4') && c.includes('企业阶段 = 成长期') && market >= 4 && stage === 'growth') hit = true;
+    if (c.includes('企业阶段 = 成熟期') && c.includes('技术领先性 ≤ 2') && stage === 'mature' && tech <= 2) hit = true;
+    if (c.includes('企业阶段 = 成长期') && c.includes('市场空间 ≥ 4') && !c.includes('团队') && stage === 'growth' && market >= 4) hit = true;
+    if (c.includes('市场空间 ≥ 4') && c.includes('产业定位 = 产业新增') && market >= 4 && position === 'create') hit = true;
+    if (c.includes('技术领先性 ≤ 2') && c.includes('团队能力 ≤ 2') && tech <= 2 && team <= 2) hit = true;
+    if (c.includes('市场空间 ≥ 4') && c.includes('技术领先性 ≥ 3') && c.includes('团队能力 ≥ 3') && market >= 4 && tech >= 3 && team >= 3) hit = true;
+    if (c.includes('企业阶段 = 成熟期') && c.includes('团队能力 ≥ 4') && stage === 'mature' && team >= 4) hit = true;
+    if (c.includes('技术领先性 ≥ 4') && c.includes('市场空间 ≥ 4') && c.includes('团队能力 ≥ 4') && tech >= 4 && market >= 4 && team >= 4) hit = true;
+    if (c.includes('产业定位 = 产业颠覆') && c.includes('团队能力 ≤ 2') && position === 'disrupt' && team <= 2) hit = true;
+    if (c.includes('技术领先性 ≥ 3') && c.includes('市场空间 ≥ 3') && c.includes('团队能力 ≥ 3') && tech >= 3 && market >= 3 && team >= 3 && !c.includes('≥ 4')) hit = true;
+
+    if (hit) {
+      fired.push(r);
+      chain.push(r);
+    }
+  });
+
+  // Deduplicate chain (some rules may match multiple conditions)
+  const seen = new Set();
+  const uniqueChain = chain.filter(r => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+
+  // Mark fired rules in the rule base
+  document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('fired'));
+  uniqueChain.forEach(r => {
+    const el = document.getElementById('rule-' + r.id);
+    if (el) el.classList.add('fired');
+  });
+
+  // Build results
+  const highCount = uniqueChain.filter(r => r.priority === 'high').length;
+  const resultsHTML = `
+    <div class="section-title">推理结果</div>
+    <div class="grid4">
+      <div class="stat-card"><div class="num">${uniqueChain.length}</div><div class="label">触发规则</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--danger)">${highCount}</div><div class="label">高优先级</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--accent2)">${uniqueChain.filter(r => r.priority === 'medium').length}</div><div class="label">中优先级</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--success)">${uniqueChain.filter(r => r.priority === 'info').length}</div><div class="label">参考建议</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>推理链</h3><span class="badge badge-green">可解释推理</span></div>
+      <div class="chain">
+        ${uniqueChain.map((r, i) => `
+          <div class="chain-node">
+            <div class="chain-dot-col">
+              <div class="chain-dot${r.priority === 'high' ? ' fired' : ''}"></div>
+              ${i < uniqueChain.length - 1 ? '<div class="chain-line"></div>' : ''}
+            </div>
+            <div class="chain-content">
+              <h5 style="color:${r.priority === 'high' ? 'var(--danger)' : r.priority === 'medium' ? 'var(--accent2)' : 'var(--ink2)'}">
+                ${r.id} · ${r.then}
+              </h5>
+              <p><strong style="color:var(--accent2)">条件：</strong>${r.if}</p>
+              <p><strong style="color:var(--success)">建议：</strong>${r.action}</p>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.getElementById('inference-results').innerHTML = resultsHTML;
+}
+
+function resetInference() {
+  document.getElementById('v-tech').textContent = '3';
+  document.getElementById('v-market').textContent = '3';
+  document.getElementById('v-team').textContent = '3';
+  document.querySelectorAll('#view-inference input[type=range]').forEach(s => s.value = 3);
+  document.getElementById('v-stage').value = 'growth';
+  document.getElementById('v-position').value = 'enhance';
+  document.getElementById('v-market-type').value = 'blue';
+  document.getElementById('inference-results').innerHTML = '';
+  document.querySelectorAll('.rule-card').forEach(c => c.classList.remove('fired'));
+}
+
+// ═══════════════════════════════════════
+// Investment Calculator
+// ═══════════════════════════════════════
+function calcInvest() {
+  const m = +document.getElementById('iv-market').value;
+  const t = +document.getElementById('iv-tech').value;
+  const e = +document.getElementById('iv-team').value;
+  const p = +document.getElementById('iv-position').value;
+  const v = +document.getElementById('iv-valuation').value;
+
+  // Weighted score
+  const score = Math.round((m * 0.25 + t * 0.25 + e * 0.2 + p * 0.15 + v * 0.15) * 10);
+  document.getElementById('invest-score').textContent = score;
+  document.getElementById('invest-bar').style.width = score + '%';
+
+  let verdict, color;
+  if (score >= 80) { verdict = '强烈推荐 ★'; color = 'var(--success)'; }
+  else if (score >= 60) { verdict = '推荐投资 ✓'; color = 'var(--accent)'; }
+  else if (score >= 40) { verdict = '一般机会 △'; color = 'var(--accent2)'; }
+  else { verdict = '谨慎/回避 ✕'; color = 'var(--danger)'; }
+
+  document.getElementById('invest-verdict').textContent = verdict;
+  document.getElementById('invest-verdict').style.color = color;
+  document.getElementById('invest-score').style.color = color;
+  document.getElementById('invest-bar').style.background = color;
+}
+
+// ═══════════════════════════════════════
+// Industry Tab Switch
+// ═══════════════════════════════════════
+function switchIndustryTab(n) {
+  document.querySelectorAll('#industry-tabs .tab').forEach((t, i) => t.classList.toggle('active', i === n));
+  document.querySelectorAll('#view-industry .tab-content').forEach((c, i) => c.classList.toggle('active', i === n));
+}
+
+// ═══════════════════════════════════════
+// Init
+// ═══════════════════════════════════════
+renderKB();
+buildWizard();
+renderRules();
+calcInvest();
+</script>
+</body>
+</html>
